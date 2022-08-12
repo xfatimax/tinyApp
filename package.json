@@ -16,5 +16,8 @@
   "bugs": {
     "url": "https://github.com/xfatimax/tinyApp/issues"
   },
-  "homepage": "https://github.com/xfatimax/tinyApp#readme"
+  "homepage": "https://github.com/xfatimax/tinyApp#readme",
+  "dependencies": {
+    "express": "^4.18.1"
+  }
 }
