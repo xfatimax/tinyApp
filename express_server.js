@@ -57,3 +57,12 @@ app.get("/u/:id", (req, res) => {
   const longURL = urlDatabase[req.params.longURL];
   res.redirect(longURL);
 });
+
+app.post("/urls", (req, res) => {
+  const userID = req.session.user_id;
+  if (req.session.user) {
+    urlsForUser(urlDatabase, userID); 
+    urlDatabase[generateRandomString()] = {longURL: req.body.longURL, userID: req.session.user_id}; 
+    res.redirect(`/urls/${generateRandomString()}`); // Redirects to new url's page
+  }
+})
