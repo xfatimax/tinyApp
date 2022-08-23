@@ -70,9 +70,18 @@ app.get("/register", (req, res) => {
 app.post("/register", (req, res) => {
   const email = req.body.email;
   const password = req.body.password;
-  const userID = newUser(email, password, users);
-  req.session.userID = userID;
-  res.redirect("/urls");
+ 
+  if (email === "" || password === "") {
+    res.status(400).send('Email and password are required!');
+  }
+  if (getUserByEmail(email, users)) {
+    res.status(400).send('Email is already registered!');
+  }
+  else {
+    const userID = newUser(email, password, users);
+    req.session.userID = userID;
+    res.redirect("/urls");
+  }
 });
 
 app.get('/login', (req, res) => {
