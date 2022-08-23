@@ -1,11 +1,10 @@
 const express = require("express");
+const cookieSession = require('cookie-session');
 const app = express();
 const bcrypt = require("bcryptjs");
 const PORT = 8080; // default port 8080
-const hashedPassword = bcrypt.hashSync(password, 10);
-const generateRandomString = function() {
-  return Math.random().toString(36).slice(2, 8);
-};
+const { generateRandomString, getUserByEmail} = require("./helper");
+
 app.set("view engine", "ejs");
 
 const urlDatabase = {
@@ -87,8 +86,8 @@ app.post("/register", (req, res) => {
 });
 
 app.get('/login', (req, res) => {
-  const user = req.session.user;
-  const templateVars = {user: req.session.userID,
+  const user = req.session.user_id;
+  const templateVars = {user: req.session.user_id,
   };
   if (user) {
     res.redirect('urls');
