@@ -1,6 +1,8 @@
 const express = require("express");
 const app = express();
+const bcrypt = require("bcryptjs");
 const PORT = 8080; // default port 8080
+const hashedPassword = bcrypt.hashSync(password, 10);
 const generateRandomString = function() {
   return Math.random().toString(36).slice(2, 8);
 };
