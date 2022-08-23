@@ -66,3 +66,47 @@ app.post("/urls", (req, res) => {
     res.redirect(`/urls/${generateRandomString()}`); // Redirects to new url's page
   }
 })
+
+app.post("/login", (req, res) => {
+  const userEmail = req.body.email;
+  const userPassword = req.body.password; // For testing with bcrypt.compareSync. Checks if input matches value in database
+  // const userPresence = emailPwdMatch(users, userEmail, userPassword);
+  // const foundUserID = getUserID(users, req.body.email);
+});
+
+const templateVars = {
+  username: req.cookies["username"],
+  // ... any other vars
+};
+res.render("urls_index", templateVars);
+
+app.post("/register", (req, res) => {
+  const email = req.body.email;
+  const password = req.body.password;
+
+  if (email === "" || password === "") {
+    res.status(400).send('Email and password are required!');
+
+  }
+  if (getUserByEmail(email, users)) {
+    res.status(400).send('Email is already registered!');
+
+  } else {
+    const userID = newUser(email, password, users);
+    req.session.userID = userID;
+    res.redirect("/urls");
+  }
+});
+
+app.get("/register", (req, res) => {
+  const user = req.session.userID;
+  const templateVars = {
+    user: req.session.userID
+  };
+  if (user) {
+    res.redirect('urls');
+
+  } else {
+    res.render('register', templateVars);
+  }
+});
