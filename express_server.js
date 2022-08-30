@@ -88,7 +88,6 @@ app.post("/register", (req, res) => {
     res.status(400).send('Email is already registered!');
   }
   else {
-    // const userID = newUser(email, password, users);
     //Add new user to database
     const randomStr = generateRandomString();
     users[randomStr] = {
