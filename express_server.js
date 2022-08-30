@@ -3,7 +3,7 @@ const cookieSession = require('cookie-session');
 const app = express();
 const bcrypt = require("bcryptjs");
 const PORT = 8080; // default port 8080
-const { generateRandomString, getUserByEmail, isEmailTaken} = require("./helper");
+const { generateRandomString, getUserByEmail} = require("./helper");
 
 app.set("view engine", "ejs");
 
@@ -31,23 +31,32 @@ const users = {
   },
 };
 
+//Needs to be UPDATED ---------------------------
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieSession({
+  name: 'session',
+  keys: ['key1', 'key2'],
+
+  // Cookie Options
+  maxAge: 24 * 60 * 60 * 1000 // 24 hours
+}));
 
 app.get("/", (req, res) => {
-  res.send("Hello!");
+  const templateVars = {user: req.session.user_id};
+  if (!req.session.user) {
+    res.render('login', templateVars);
+  } 
+  res.redirect("/urls");
 });
 
-app.listen(PORT, () => {
-  console.log(`Example app listening on port ${PORT}!`);
-});
 
 app.get("/urls.json", (req, res) => {
   res.json(urlDatabase);
 });
 
-app.get("/hello", (req, res) => {
-  res.send("<html><body>Hello <b>World</b></body></html>\n");
-});
+// app.get("/hello", (req, res) => {
+//   res.send("<html><body>Hello <b>World</b></body></html>\n");
+// });
 
 app.post("/urls", (req, res) => {
   const longURL = req.body.longURL;
@@ -72,15 +81,22 @@ app.post("/register", (req, res) => {
   const email = req.body.email;
   const password = req.body.password;
  
-  if (email === "" || password === "") {
+  if (!email || !password) {
     res.status(400).send('Email and password are required!');
   }
   if (getUserByEmail(email, users)) {
     res.status(400).send('Email is already registered!');
   }
   else {
-    const userID = newUser(email, password, users);
-    req.session.userID = userID;
+    // const userID = newUser(email, password, users);
+    //Add new user to database
+    const randomStr = generateRandomString();
+    users[randomStr] = {
+      id: randomStr,
+      email: req.body.email,
+      password: bcrypt.hashSync(req.body.password, 10)
+    }
+    // req.session.userID = userID;
     res.redirect("/urls");
   }
 });
@@ -118,7 +134,10 @@ app.post("/login", (req, res) => {
 
 app.get("/urls", (req, res) => {
   const templateVars = { user: users[req.session.user], urls: urlsForUser(req.session.user, urlDatabase) };
-  res.render('urls_index', templateVars);
+  if (req.session.user) {
+    res.render('urls_index', templateVars);
+  } 
+  res.status(400).send(`Error! Please log in to view URLs.`)
 });
 
 app.get("/u/:id", (req, res) => {
@@ -153,8 +172,6 @@ app.get("/urls/new", (req, res) => {
   }
 });
 
-
-
 app.post("/urls/:id", (req, res) => {
   if (urlDatabase[req.params.id].userID === req.session["userID"]) {
     let longURL = req.body.longURL;
@@ -166,8 +183,16 @@ app.post("/urls/:id", (req, res) => {
 });
 
 app.delete("urls/:id/delete", (req, res) => {
-  delete urlDatabase[req.params.id];
-  res.redirect("/urls");
+  if (req.session.user) {
+    if (longURL.userID === req.session.user_ID) {
+      delete urlDatabase[req.params.id];
+      res.redirect("/urls");
+    }
+    res.redirect("/urls");
+  } 
+  res.status(400).send(`You are not logged in! Please log in to delete.`);
 });
 
-
+app.listen(PORT, () => {
+  console.log(`Example app listening on port ${PORT}!`);
+});
