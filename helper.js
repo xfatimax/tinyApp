@@ -22,4 +22,14 @@ let isEmailTaken = (email, userDatabase) => {
   return false;
 };
 
-module.exports = { generateRandomString, getUserByEmail}
+const urlsOfUser = function(userID, urlDatabase) {
+  let newObj = {};
+  for (const entry in urlDatabase) {
+    if (urlDatabase[entry].userID === userID) {
+      newObj[entry] = urlDatabase[entry];
+    }
+  }
+  return newObj;
+};
+
+module.exports = { generateRandomString, getUserByEmail, urlsOfUser}

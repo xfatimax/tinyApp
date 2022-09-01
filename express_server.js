@@ -1,11 +1,18 @@
 const express = require("express");
-const cookieSession = require('cookie-session');
 const app = express();
-const bcrypt = require("bcryptjs");
 const PORT = 8080; // default port 8080
-const { generateRandomString, getUserByEmail} = require("./helper");
-
+const cookieSession = require('cookie-session');
 app.set("view engine", "ejs");
+app.use(express.urlencoded({ extended: true }));
+const bcrypt = require("bcryptjs");
+
+const { generateRandomString, getUserByEmail, urlsOfUser} = require("./helper");
+app.use(cookieSession({
+  name: 'session',
+  keys: ['key1', 'key2'],
+  // Cookie Options
+  maxAge: 24 * 60 * 60 * 1000 // 24 hours
+}));
 
 const urlDatabase = {
     b6UTxQ: {
@@ -31,16 +38,6 @@ const users = {
   },
 };
 
-//Needs to be UPDATED ---------------------------
-app.use(express.urlencoded({ extended: true }));
-app.use(cookieSession({
-  name: 'session',
-  keys: ['key1', 'key2'],
-
-  // Cookie Options
-  maxAge: 24 * 60 * 60 * 1000 // 24 hours
-}));
-
 
 app.get("/", (req, res) => {
   const templateVars = {user: req.session.user_id};
@@ -60,7 +57,7 @@ app.get("/urls", (req, res) => {
     return res.redirect("/");
   }
   const user = users[req.session.user_id];
-  const templateVars = { urls: urlDatabase, user: user};
+  const templateVars = { urls: urlsOfUser(req.session.user_id,urlDatabase), user: user};
   return res.render("urls_index", templateVars);
 });
 
@@ -105,7 +102,7 @@ app.get('/login', (req, res) => {
   if (user) {
     return res.redirect('urls');
   } else {
-    return es.render('login', templateVars);
+    return res.render('login', templateVars);
   }
 });
 
@@ -130,23 +127,27 @@ app.post("/login", (req, res) => {
 
 // For some reason, "/urls/new" was not working
 app.get("/urls/new/1", (req, res) => {
-  const user = users[req.session.user_id];
+  //const user = users[req.session.user_id];
   //const templateVars = { urls: urlDatabase, user: user};
-  const templateVars = {user: user} 
+  const templateVars = {user: users[req.session.user_id]};
   if (req.session.user_id) {
     return res.render('urls_new', templateVars);
 
-  } else {
+  } 
     return res.redirect('/login');
-  }
+  
 });
 
 //Create new entry
 app.post("/urls", (req, res) => {
+  if (!req.session.user_id) {
+    return res.status(401).send('You need to be logged in to create TinyApp URLs!\n');
+  }
   const shortURL = generateRandomString();
   urlDatabase[shortURL] = { longURL: req.body.longURL, userID: req.session.user_id};
   return res.redirect(`/urls/${shortURL}`);
 });
+
 
 app.get("/urls/:id", (req, res) => {
   const templateVars = {
@@ -175,26 +176,25 @@ app.post("/urls/:id/delete", (req, res) => {
     return res.status(401).send(`You are not logged in! Please log in to delete.`); 
   } 
   delete urlDatabase[req.params.id];
-  return res.redirect("/urls");
+  return res.redirect('/urls');
 });
 
 // Edit an entry
 app.post("/urls/:id/edit", (req, res) => {
   if (req.session.user_id !== urlDatabase[req.params.id].userID) {
-    return res.status(401).send('You do not have permission to edit that TinyAPP entry.');
+    return res.status(401).send('You do not have access to edit that TinyAPP entry.');
   }
-  urlDatabase[req.params.id].longURL = req.body.longURL;
-  return res.redirect("/urls");
+  urlDatabase[req.params.id] = req.body.longURL;
+  return res.redirect('/urls');
 });
 
 app.get("/u/:id", (req, res) => {
-  const longURL = urlDatabase[req.params.longURL];
+  const longURL = urlDatabase[req.params.id].longURL;
   if (!urlDatabase[req.params.id]) {
     return res.status(401).send('URL is not in the database');
   }
   return res.redirect(longURL);
 });
-
 
 //Logout
 app.post("/logout", (req, res) => {
