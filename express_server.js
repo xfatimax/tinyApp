@@ -91,16 +91,16 @@ app.post("/register", (req, res) => {
       email: req.body.email,
       password: bcrypt.hashSync(req.body.password, 10)
     }
-    // req.session.userID = userID;
+    req.session.user_id = randomStr;
     return res.redirect("/urls");
   }
 });
 
 app.get('/login', (req, res) => {
   const user = req.session.user_id;
-  const templateVars = {user: req.session.user_id,};
+  const templateVars = {user: req.session.user_id};
   if (user) {
-    return res.redirect('urls');
+    return res.redirect('/urls');
   } else {
     return res.render('login', templateVars);
   }
