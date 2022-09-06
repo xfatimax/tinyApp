@@ -119,7 +119,8 @@ app.post("/login", (req, res) => {
     return res.status(400).send("Password is incorrect");
   
   } else {
-    req.session.user_id = userID;
+    console.log(user);
+    req.session.user_id = user.id;
     return res.redirect("/urls");
   }
 
@@ -140,11 +141,13 @@ app.get("/urls/new/1", (req, res) => {
 
 //Create new entry
 app.post("/urls", (req, res) => {
+  console.log("hello");
   if (!req.session.user_id) {
     return res.status(401).send('You need to be logged in to create TinyApp URLs!\n');
   }
   const shortURL = generateRandomString();
   urlDatabase[shortURL] = { longURL: req.body.longURL, userID: req.session.user_id};
+  console.log("world");
   return res.redirect(`/urls/${shortURL}`);
 });
 
@@ -155,9 +158,12 @@ app.get("/urls/:id", (req, res) => {
     longURL: urlDatabase[req.params.id], 
     user: users[req.session.user_id]};
   
-  if (req.session.user_id === users.userID) {
+  if (req.session.user_id === urlDatabase[req.params.id].userID) {
     return res.render('urls_show', templateVars);
-  }
+  } 
+  console.log(urlDatabase);
+  return res.status(401).send('This URL does not belong to you!\n');
+
 });
 
 // app.post("/urls/:id", (req, res) => {
@@ -184,16 +190,17 @@ app.post("/urls/:id/edit", (req, res) => {
   if (req.session.user_id !== urlDatabase[req.params.id].userID) {
     return res.status(401).send('You do not have access to edit that TinyAPP entry.');
   }
-  urlDatabase[req.params.id] = req.body.longURL;
+  urlDatabase[req.params.id].longURL = req.body.longURL;
   return res.redirect('/urls');
 });
 
 app.get("/u/:id", (req, res) => {
-  const longURL = urlDatabase[req.params.id].longURL;
+  console.log("line 197 " , urlDatabase, req.params.id);
+  const longURL = urlDatabase[req.params.id];
   if (!urlDatabase[req.params.id]) {
     return res.status(401).send('URL is not in the database');
   }
-  return res.redirect(longURL);
+  return res.redirect(longURL.longURL);
 });
 
 //Logout
