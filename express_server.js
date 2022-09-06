@@ -119,7 +119,7 @@ app.post("/login", (req, res) => {
     return res.status(400).send("Password is incorrect");
   
   } else {
-    req.session.user_id = user;
+    req.session.user_id = userID;
     return res.redirect("/urls");
   }
 
