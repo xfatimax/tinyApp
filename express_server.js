@@ -40,9 +40,9 @@ const users = {
 
 
 app.get("/", (req, res) => {
-  const templateVars = {user: req.session.user_id};
+
   if (!req.session.user) {
-    return res.render('login', templateVars);
+    return res.redirect("/login");
   } 
   return res.redirect("/urls");
 });
@@ -54,7 +54,7 @@ app.get("/urls.json", (req, res) => {
 
 app.get("/urls", (req, res) => {
   if (!req.session.user_id) {
-    return res.redirect("/");
+    return res.send("Please Login to see urls.");
   }
   const user = users[req.session.user_id];
   const templateVars = { urls: urlsOfUser(req.session.user_id,urlDatabase), user: user};
@@ -63,10 +63,11 @@ app.get("/urls", (req, res) => {
 
 
 app.get("/register", (req, res) => {
-  const user = req.session.userID;
+  const user = req.session.user_id;
   const templateVars = {user: req.session.userID};
+  console.log({user});
   if (user) {
-    return res.redirect('urls');
+    return res.redirect('/urls');
 
   } else {
     return res.render('register', templateVars);
@@ -157,12 +158,20 @@ app.get("/urls/:id", (req, res) => {
     id: req.params.id,
     longURL: urlDatabase[req.params.id], 
     user: users[req.session.user_id]};
-  
-  if (req.session.user_id === urlDatabase[req.params.id].userID) {
-    return res.render('urls_show', templateVars);
-  } 
-  console.log(urlDatabase);
-  return res.status(401).send('This URL does not belong to you!\n');
+    if (!urlDatabase[req.params.id]) {
+      return res.send("This url does not exist")
+    }
+    if (req.session.user_id) {
+      if (req.session.user_id === urlDatabase[req.params.id].userID) {
+        return res.render('urls_show', templateVars);
+      } else {
+        return res.status(401).send('This URL does not belong to you!\n');
+      }
+    } else {
+      return res.status(401).send('Please login to view this url!')
+    }
+    
+    console.log(urlDatabase);
 
 });
 
@@ -181,12 +190,18 @@ app.post("/urls/:id/delete", (req, res) => {
   if (req.session.user_id !== urlDatabase[req.params.id].userID) {
     return res.status(401).send(`You are not logged in! Please log in to delete.`); 
   } 
+  if (req.session.user_id !== urlDatabase[req.params.id].userID) {
+    return res.status(401).send('You do not have access to delete that TinyAPP entry.');
+  }
   delete urlDatabase[req.params.id];
   return res.redirect('/urls');
 });
 
 // Edit an entry
-app.post("/urls/:id/edit", (req, res) => {
+app.post("/urls/:id", (req, res) => {
+  if (!urlDatabase[req.params.id]) {
+    return res.status(401).send("This url does not exist")
+  }
   if (req.session.user_id !== urlDatabase[req.params.id].userID) {
     return res.status(401).send('You do not have access to edit that TinyAPP entry.');
   }
@@ -206,7 +221,7 @@ app.get("/u/:id", (req, res) => {
 //Logout
 app.post("/logout", (req, res) => {
   req.session = null;
-  return res.redirect("/urls");
+  return res.redirect("/login");
 });
 
 
